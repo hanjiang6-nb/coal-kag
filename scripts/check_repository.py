@@ -4,11 +4,10 @@ import subprocess
 import sys
 
 LIMIT = 100_000_000
-BLOCKED_DIRS = {"data", "datasets", "models", "checkpoints", "indexes", "logs", "backups"}
+BLOCKED_DIRS = {"data", "datasets", "indexes", "logs", "backups"}
 BLOCKED_SUFFIXES = {
     ".csv", ".tsv", ".parquet", ".arrow", ".feather", ".xlsx", ".xls",
-    ".db", ".sqlite", ".sqlite3", ".dump", ".pkl", ".pickle", ".npy", ".npz",
-    ".pt", ".pth", ".onnx", ".safetensors", ".h5", ".bin",
+    ".db", ".sqlite", ".sqlite3", ".dump",
     ".zip", ".tar", ".gz", ".7z", ".rar", ".log", ".pem", ".key", ".p12",
 }
 
@@ -20,7 +19,7 @@ def violation(name, size):
     if any(part.lower() in BLOCKED_DIRS for part in path.parts[:-1]):
         return "data/generated directory is forbidden"
     if path.suffix.lower() in BLOCKED_SUFFIXES:
-        return "data, binary, archive, or credential file is forbidden"
+        return "data, archive, or credential file is forbidden"
     if (path.name == ".env" or path.name.startswith(".env.")) and not path.name.endswith(".example"):
         return "local environment file is forbidden"
     return None

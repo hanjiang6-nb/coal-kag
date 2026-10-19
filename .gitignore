@@ -22,12 +22,10 @@ env/
 *.key
 *.p12
 
-# Generated data, indexes, models, and logs
-/data/
-/models/
-/checkpoints/
-/indexes/
-/logs/
+# Business data and generated indexes/logs (models are allowed)
+data/
+indexes/
+logs/
 *.log
 
 # Editor and operating system files
@@ -39,7 +37,7 @@ desktop.ini
 .ipynb_checkpoints/
 node_modules/
 
-# Datasets, databases, model binaries, and archives
+# Datasets, databases, and archives
 datasets/
 backups/
 *.csv
@@ -53,16 +51,6 @@ backups/
 *.sqlite
 *.sqlite3
 *.dump
-*.pkl
-*.pickle
-*.npy
-*.npz
-*.pt
-*.pth
-*.onnx
-*.safetensors
-*.h5
-*.bin
 *.zip
 *.tar
 *.gz

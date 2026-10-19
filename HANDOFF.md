@@ -1,5 +1,14 @@
 # 交接记录
 
+## 2026-10-19 — 登记服务器
+
+- 完成：新增 `SERVER.md`，记录用户提供的 SSH 主机、端口、用户名；不记录密码。
+- 当前设备：`Pugss`，Windows / PowerShell，路径 `F:\kag`，Python 3.8，Git 2.45.1.windows.1。
+- 服务器：`connect.weste.seetacloud.com:43496`，用户 `root`。未登录；操作系统、运行环境、项目及数据路径仍待核实。
+- 验证：`python -m unittest discover -s tests -v` 四项测试通过，`python scripts/check_repository.py` 和 `git diff --cached --check` 均通过；SSH 连接及远程运行环境不在本次验证范围。
+- 下一步：实际开展服务器工作时核实并更新 `SERVER.md`；约 22 GB 数据留在本地或服务器。
+- 同步：上次提交 `f88f99d` 已推送并核对；本次提交后推送到 `origin/main` 并核对哈希。
+
 ## 2026-10-19 — 允许上传模型
 
 - 完成：允许模型及权重上传；单文件严格小于 100,000,000 字节；约 22 GB 业务数据继续保留在本地或服务器。

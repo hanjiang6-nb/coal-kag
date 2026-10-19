@@ -1,5 +1,17 @@
 # 交接记录
 
+## 2026-10-19 — Markdown 全量质量检查与目录整理
+
+- 完成：嵌套文档 `0a4ef632d36927c62acf4d99a2a2803293a0a14a10999bbefd793c233c6f9a2b` 已整理至独立文档目录；先备份再移动，文件 SHA-256 一致。
+- 环境：本机 `Pugss`，Windows / PowerShell，`F:\kag`，Python 3.8；服务器 Ubuntu 22.04.5、Python 3.12，项目 `/root/autodl-tmp/rag`，当前 0.5 核 CPU / 2 GiB 内存，无 GPU。连接信息见 `SERVER.md`。
+- 实现：复用服务器原有诊断规则，新增逐篇审计和独立统计验证脚本；既有 `chunk_pipeline.py` 的本地副本仅做 Python 3.8 等价兼容调整，未覆盖服务器生产文件。
+- 验证：本地 `python -m unittest discover -s tests -v` 11 项通过；服务器 `python -m unittest discover -s quality_tests -v` 7 项通过；服务器原有诊断测试 13 项通过。
+- 检查状态：8,443 篇全量审计正在运行，目录 `quality_runs/audit_20261019_final`，不能将当前部分统计当作最终结果。
+- 旧批次：`quality_runs/audit_20261019` 保留了归档备份和移动清单；该初始审计已停止并由最终批次替代，以避免反复解析内嵌图片编码。业务正文未改写。
+- 报告定位：编码/结构提示指向 `audit_text/` 派生正文，PDF 页码为原文页码；文本覆盖提示只是候选，不保证扫描页、数字及公式语义准确。
+- 下一步：等待最终批次结束，执行 `python scripts/validate_markdown_audit.py --output quality_runs/audit_20261019_final`，汇总并复核候选问题，记录最终结论；不得把尚未核查的提示标为已修复。
+- 回滚：目录整理清单位于 `quality_runs/audit_20261019/normalization.json`，源目录备份在该批次 `backups/`；先检查源/目标是否占用，再按清单回移。代码回滚用 `git revert <本次提交哈希>`。
+
 ## 2026-10-19 — 登记服务器
 
 - 完成：新增 `SERVER.md`，记录用户提供的 SSH 主机、端口、用户名；不记录密码。

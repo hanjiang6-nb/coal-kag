@@ -2,6 +2,8 @@
 
 KAG 工程化项目。
 
+服务器环境见 [SERVER.md](SERVER.md)，PDF 转换结果的质量检查方法见 [MARKDOWN_QUALITY.md](MARKDOWN_QUALITY.md)，最新进展见 [HANDOFF.md](HANDOFF.md)。
+
 ## Git 使用
 
 提交项目文件：

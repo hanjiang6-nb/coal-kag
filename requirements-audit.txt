@@ -1,0 +1,2 @@
+# Version installed and verified on the processing server (Python 3.12).
+pypdfium2==5.14.0

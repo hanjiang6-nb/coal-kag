@@ -56,3 +56,11 @@ backups/
 *.gz
 *.7z
 *.rar
+
+# Server source documents, conversion outputs, and audit artifacts
+/pdf/
+/markdown/
+/quality_runs/
+/chunk_runs/
+/review_runs/
+/artifacts/

@@ -1,5 +1,17 @@
 # 交接记录
 
+## 2026-10-27 — data 标注知识图谱
+
+- 已检查本地工作区；原有 `MARKDOWN_QUALITY.md` 修改和未跟踪报告脚本保持原样，未纳入本次提交。
+- GitHub `git fetch origin` 连接 443 失败，已读取缓存 `origin/main` 的交接（98bc962），不能声称已获取最新交接。
+- 输入：本机 `F:\kag\data` 的 76 普通、45 扩展、21 待核查范围，19 个文件哈希全部匹配；未调用付费模型，未启动训练或修改服务器。
+- 产物：`artifacts/knowledge_graph_20261027/` 下 SQLite 知识图谱、节点/边 JSONL、审查问题及汇总。1,831 节点、2,978 边，174 条默认银标陈述；限定、转述、待核查层单独保留。
+- 完整性：证据精确子串、实体类型及端点、SQLite 完整性和外键检查通过，数据审查异常为零；这不代表人工金标或语义准确率认证。
+- 当前设备：Pugss，Windows / PowerShell，F:\kag，Python 3.8。每个实体作为范围内提及保存，未猜测跨文档同名实体身份。
+- 提交前验证：`python -m unittest discover -s tests -v` 12 项通过，`python scripts/check_repository.py` 及 `git diff --cached --check` 均通过。
+- 下一步可查询 SQLite `default_facts` 视图；跨文献实体消歧和人工验收仍未完成。数据及图谱产物被 Git 忽略。
+- 回滚：代码用 `git revert <本次提交>`；输出为新目录，原始 data 未改写。
+
 ## 2026-10-19 — Markdown 全量质量检查与目录整理
 
 - 完成：嵌套文档 `0a4ef632d36927c62acf4d99a2a2803293a0a14a10999bbefd793c233c6f9a2b` 已整理至独立文档目录；先备份再移动，文件 SHA-256 一致。

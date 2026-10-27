@@ -1,5 +1,23 @@
 # 交接记录
 
+## 2026-10-27 — 知识图谱到可复用本体候选
+
+- 用户确认大方向为从知识图谱构建本体，本轮实现候选学习层：允许重叠、保留多层，先给 C 编号；具体命名、正式本体语义审核及领域约束后置。
+- 开始前检查 main/工作区并成功 `git fetch origin`，读取 `git show origin/main:HANDOFF.md`；远程基线 51430bd。原有 MARKDOWN_QUALITY.md 修改及 scripts/report_markdown_audit.py 保持不变。
+- 当前设备 PUGSS，Windows 10.0.26200 / PowerShell / Python 3.8.8 / Node.js v16.16.0，路径 `F:\kag`；本次未操作服务器，实际服务器信息仍见 SERVER.md。
+- 上轮未提交的编号簇代码、模板、测试和共享模块工作副本及 patch 已隔离到 `artifacts/abandoned_numbered_clusters_20261027/`，不提交。共享模块先恢复到 HEAD，再仅提取 prepare_kind_profiles，保留旧入口行为；旧测试全部通过。
+- 新入口 `scripts/learn_ontology_candidates.py`；新视图模板 `scripts/ontology_learning_report.html`。只按可靠正属性匹配，不把缺失当否定；物种参考不充当样品实测，同名提及不充当不同品种或同一现实实体。
+- 同时保留单属性 facet 与闭合交集候选；不再只存最小外延。主组成元素来自完整化学式解析，未知语法不猜。定义只用规范化条件；候选 ID 不含成员列表，C 编号由一致的注册表链管理，冲突拒绝。
+- 正式运行：`python scripts/learn_ontology_candidates.py --source artifacts/domain_features_20261027_release --output artifacts/ontology_learning_20261027_release`；相同命令加 `--validate-only` 全量验证通过。
+- 首轮结果：537 个候选项，9 项有正属性；33 个候选覆盖 7 个种类，7 个均多重归属；37 条严格定义蕴含、29 条观测包含线索、24 对观测同外延。原始语义关系 174，领域投影 0；530 项未覆盖。33 个候选不是 33 个已验收本体。
+- C13 为主组成 Fe 条件，成员菱铁矿/黄铁矿/白铁矿；C12 为 FeS2 条件，成员黄铁矿/白铁矿；C5 为碳酸盐条件，成员菱铁矿/白云石/方解石。候选可共享成员，上位候选也保留。
+- 复用运行：`python scripts/learn_ontology_candidates.py --source artifacts/domain_features_20261027_release --registry artifacts/ontology_learning_20261027_release/registry.json --output artifacts/ontology_learning_reuse_replay_20261027_release`；同命令加 `--validate-only` 通过。注册表 ID、编号和定义精确保持，33 复用、0 新增。registry 是生成数据，不上传 GitHub；新设备需同步注册表基线及本地业务数据。
+- `python -m unittest discover -s tests -v`：47 项通过，新增 9 项覆盖重叠/上位候选、单关键条件、样本包含非定义关系、同外延非等价、增加成员后复用身份、方向/证据去重、完整输出篡改、安全嵌入、化学语法及大小写/单位/值类型区分。
+- 真实 Chrome 检查：`python artifacts/ontology_learning_20261027_release/check_learning_browser.py`，33 唯一节点、37 定义线、29 观测线开关、成员多归属、编号/组成/未覆盖搜索、零领域边不造线及 SVG 导出全部通过；脚本和结果留忽略目录。已实际渲染并查看图示，正式入口 `知识图谱到本体候选.html`，SVG 为 `可复用本体候选.svg`。
+- 已校验导出图所有原始及新增节点/边，并补齐观测同外延、定义等价的明确类型边。最早 verified 目录保留作历史试跑，正式输出以 release 为准。
+- 提交前执行 `python scripts/check_repository.py`、暂存区凭据检查和 `git diff --cached --check`。只上传代码、模板、测试和文档；不上传图谱、注册表、HTML 或其他业务生成物。
+- 下一步补充属性覆盖并审核候选定义、关系和领域约束，再形成正式本体。回滚代码使用 `git revert <本次提交>`，新产物在独立目录，原 data/历史图谱不改写。提交后推送 GitHub，失败保留本地提交并重试 `git push origin main`。
+
 ## 2026-10-27 — 最小属性本体，随后找本体之间的关系
 
 - 用户已先确认例子并授权试跑：不同品种按固有属性抽象为最小本体；关系阶段只找本体之间的关系，不产生新本体。旧方案及旧 15 本体产物原样保留，不作为本轮输入。

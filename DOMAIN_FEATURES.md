@@ -1,8 +1,42 @@
 # 可复用领域特征与本体候选
 
-当前试跑方案为“不同品种的固有属性 → 最小本体 → 本体之间的证据关系”。旧的关系阶段新增本体、同名提及聚类和形成方式分流均作为历史实现保留。
+当前主线是“知识图谱 → 可重叠、分层、可复用的本体候选”。聚类仅用于候选发现；此前只保留最小外延、关系阶段新增本体等方案均作为历史实现保留。
 
-## 当前方案：最小属性本体与本体间关系
+## 当前方案：可重叠和可复用的本体候选学习
+
+入口 `scripts/learn_ontology_candidates.py`。先整理种类级正属性证据，再保留单属性候选和多属性闭包候选，不再只保留最小外延，也不因种类参与已有候选就将其移出其他候选。候选使用 C 编号，暂不指定具体本体名称。
+
+这是受 [形式概念分析](https://iccl.inf.tu-dresden.de/web/Formal_Concept_Analysis/en) 启发的候选发现层：额外保留单属性定义，避免在有限样本里将成员恰好相同的不同条件误当作同一含义。只对已有可靠正属性匹配；未知不作否定，种类参考、文献提及、样品测量及 pending 继续分层。
+
+原子条件由属性键、类型化值、单位、匹配算子及定义版本确定；候选 ID 由领域类型和规范化条件确定，不含本批成员列表。化学式保持大小写，完整可解析式可派生确定的主组成元素；分数、可变组分、电荷、水合点号等暂不支持的表达保持未知。派生信息与原始属性 ID 分开追溯。物种手册中的可能形态不改写成每个样品的实测形态。
+
+`registry.json` 保存自包含条件和稳定候选身份。相同定义复用原 ID 和 C 编号，新增成员不更换身份；本批未匹配的注册候选仍保留定义。C 编号只是同一注册表链下的展示别名，多设备需要使用同一基线；冲突注册表被拒绝，不能仅凭 C 编号认定两个候选相同。注册表是运行生成的数据，留在本地或服务器，不提交 GitHub。
+
+层次与关系分开存储：
+
+- `definition_hierarchy.jsonl`：严格的定义条件蕴含，含明确的化学组成推导规则；互相蕴含另存，不画成双向层次。
+- `observed_inclusions.jsonl`：当前样本成员的严格包含，仅为待审核线索。
+- `observed_coextensions.jsonl`：当前样本成员相同但定义未被证明等价，不能自动合并。
+- `domain_relations.jsonl`：原始语义关系的多归属投影，保留谓词、方向及组内唯一证据计数；全图独立证据数另报，不将所有边权直接相加当原始关系总量。
+
+```powershell
+python scripts/learn_ontology_candidates.py --source artifacts/domain_features_20261027_release --output artifacts/<新候选批次>
+python scripts/learn_ontology_candidates.py --source artifacts/domain_features_20261027_release --output artifacts/<新候选批次> --validate-only
+
+# 后续批次复用既有定义和编号，构建与验证必须使用相同注册表基线。
+python scripts/learn_ontology_candidates.py --source artifacts/<特征图批次> --registry artifacts/<既有候选批次>/registry.json --output artifacts/<新复用批次>
+python scripts/learn_ontology_candidates.py --source artifacts/<特征图批次> --registry artifacts/<既有候选批次>/registry.json --output artifacts/<新复用批次> --validate-only
+```
+
+默认支持数为至少两个不同种类。交集和候选规模有显式上限，超限报错，不静默截断。输出只接受新目录，保留原始图谱和旧结果。
+
+2026-10-27 正式试跑位于 `artifacts/ontology_learning_20261027_release/`：880 原始对象、537 个名称/类型候选项，9 项有正属性，形成 33 个候选，覆盖 7 个种类且均有多重归属；37 条严格定义层次、29 条观测包含线索、24 对观测同外延。C13 的主组成 Fe 条件覆盖菱铁矿/黄铁矿/白铁矿，C12 的 FeS2 条件覆盖黄铁矿/白铁矿，C5 的碳酸盐条件覆盖菱铁矿/白云石/方解石。候选不代表已被确认的正式领域本体。
+
+174 条原始语义关系没有双端同时被候选覆盖，因此领域关系仍为 0；全部证据保留，530 个未覆盖项继续保留未知。`知识图谱到本体候选.html` 支持多父层次、成员多重归属、条件筛选、分类型连线和 SVG 导出。完整导出图包含三类关系及观测同外延/定义等价的明确类型边。
+
+同数据携注册表复跑于 `artifacts/ontology_learning_reuse_replay_20261027_release/`，33 个定义、身份和编号完整保持，新发现数为 0；单元测试还验证了新增种类后，既有候选身份不变而成员增加。下一阶段需要补充属性覆盖、审核候选语义及关系约束，再构建正式本体，不能从有限样本包含直接推出普遍领域公理。
+
+## 历史方案：最小属性本体与本体间关系
 
 入口 `scripts/cluster_minimal_ontologies.py`。用户已先确认例子：不同岩石品种依共同属性形成岩石类；关系阶段汇总类之间的关系，不继续产生新本体。
 

@@ -109,7 +109,7 @@ def concept_label(definition, raw_type):
     return '、'.join(a['label'] + '=' + a['value_label'] for a in definition) + '的' + translate_term(raw_type)
 
 
-def infer(source):
+def prepare_kind_profiles(source):
     source = Path(source)
     raw_nodes = read_rows(source / 'nodes.jsonl')
     nodes = {n['id']: n for n in raw_nodes}
@@ -178,6 +178,15 @@ def infer(source):
             eligible=kind in MATERIAL_TYPES and len(core_dimensions) >= 2))
         for key in reference_ids + source_members:
             object_to_kind[key] = group
+    return dict(source=source, raw_nodes=raw_nodes, nodes=nodes, edges=edges,
+                objects=objects, profiles=profiles, tokens=tokens, object_to_kind=object_to_kind)
+
+
+def infer(source):
+    prepared = prepare_kind_profiles(source)
+    source, raw_nodes, nodes, edges, objects, profiles, tokens, object_to_kind = (
+        prepared[k] for k in ['source', 'raw_nodes', 'nodes', 'edges', 'objects',
+                              'profiles', 'tokens', 'object_to_kind'])
     by_kind = {p['id']: p for p in profiles}
     frozen = [n for n in raw_nodes if n.get('ontology_frozen') is True or n['kind'] in {'ontology', 'ontology_class', 'frozen_ontology'}]
     fixed_kinds = set()

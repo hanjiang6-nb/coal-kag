@@ -1,5 +1,21 @@
 # 交接记录
 
+## 2026-10-27 — 聚类层次图
+
+- 开始前检查 main、工作区及远程，成功执行 `git fetch origin` 并读取 `git show origin/main:HANDOFF.md`；远程基线 93ac790，本地已有 3 个待上传提交。
+- 当前设备 PUGSS，Windows 10.0.26200 / PowerShell，Python 3.8.8、Node.js v16.16.0，路径 `F:\kag`。本次未操作服务器，已知服务器环境和路径见 SERVER.md。
+- 新增 `scripts/visualize_ontology_hierarchy.py` 和原生离线 SVG 模板 `scripts/ontology_hierarchy.html`。树展示生成阶段与成员归属，虚线展示支撑关系；没有生成或改写 is-a 分类、合并距离或冻结本体。
+- 实际生成命令：`python scripts/visualize_ontology_hierarchy.py --source artifacts/two_stage_ontologies_20261027_verified --output artifacts/two_stage_ontologies_20261027_verified/聚类层次图.html`。
+- 结果为 7 个属性本体、8 个关系本体、100 个成员和 780 个未聚类对象。关系第 1/2 轮生成本体，第 3 轮停止；成员和未聚类分支可展开，支持中文/原文/编号搜索、缩放、详情和 SVG 导出。
+- 16 条本体支撑边仅累计目标本体出生轮的原始连接；第 1/2 轮权重 25/13 为进入新本体的连接子集，不能当作整轮所有边界连线数量。原有本体、成员、原始图谱与旧页面保持不变。
+- `python -m unittest discover -s tests -v`：31 项通过。新增 4 项覆盖完整唯一归属、已有本体保留、出生轮累计、停止轮、异常拒绝、安全嵌入及原始文件哈希保持。
+- `python scripts/validate_two_stage_ontologies.py --source artifacts/domain_features_20261027_release --output artifacts/two_stage_ontologies_20261027_verified`：全量验证通过；此项不代表专业概念的语义验收。
+- 实际浏览器检查：`python artifacts/two_stage_ontologies_20261027_verified/check_hierarchy_browser.py`，通过默认 15 本体可见、100 成员展开/收起、中英文搜索、16 支撑边、详情及导出按钮检查。该检查脚本和结果仅保留本机忽略目录。
+- Chrome headless 已渲染并查看 `hierarchy_preview.png` 和 `hierarchy_diagram.png`；同目录保存 `聚类层次图.svg`。切换设备可用上述生成命令复现 HTML，SVG 通过页面“导出图”获取。
+- 提交前执行 `python scripts/check_repository.py`、暂存区凭据检查和 `git diff --cached --check`。只提交代码、模板、测试和交接；原有 MARKDOWN_QUALITY.md 修改和 scripts/report_markdown_audit.py 保持原样。
+- 下一步：使用层次图审核候选的概念定义及关系角色。数据和图形产物不通过 GitHub 传输；新设备需具备原始聚类结果或先运行聚类构建程序。提交后推送 GitHub，若网络失败保留本地提交并重试 `git push origin main`。
+- 回滚代码：`git revert <本次提交>`；删除本次新增可视化产物即可移除图示，不影响业务数据及既有聚类。
+
 ## 2026-10-27 — 当前两阶段本体页面中文化
 
 - 开始前检查分支和工作区，成功执行 `git fetch origin` 并读取 `git show origin/main:HANDOFF.md`；远程基线为 93ac790，本地此前有 f0b6663、e4aa229 两个待上传提交。

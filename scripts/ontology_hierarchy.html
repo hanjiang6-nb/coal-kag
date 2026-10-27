@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>聚类层次图</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#122034;--border:#2a405b;--muted:#9cafc7;--text:#e1eaf6;--green:#5dd7b4;--purple:#b59aff;--orange:#efc06e}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,"Microsoft YaHei",sans-serif}header{padding:25px 30px 16px}h1{margin:0 0 9px;font-size:27px;letter-spacing:1px}p{margin:5px 0;color:var(--muted);line-height:1.8}.topline{display:flex;justify-content:space-between;gap:20px;align-items:center}.tag{border:1px solid #536b7c;border-radius:20px;padding:6px 13px;white-space:nowrap;font-size:12px;color:#b8cbdb}.stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}.stat{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:12px 19px;min-width:145px}.stat strong{font-size:25px;display:inline-block;margin-right:10px}.stat span{color:var(--muted);font-size:12px}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 30px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#101c2d;position:sticky;top:0;z-index:5}button,input{font:inherit;border:1px solid #38516b;border-radius:6px;background:#192b42;color:var(--text);padding:9px 12px}button{cursor:pointer}button:hover{background:#223a56}button:focus-visible,input:focus-visible{outline:2px solid var(--green)}input[type=search]{width:260px}input[type=checkbox]{accent-color:var(--green)}label{cursor:pointer;display:inline-flex;align-items:center;gap:5px}.grow{flex:1}.muted{color:var(--muted);font-size:12px}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:0;min-height:720px}.canvas-wrap{min-width:0;padding:16px}.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-bottom:12px;align-items:center}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.solid,.dashed{display:inline-block;width:25px;border-top:2px solid #627e9a;vertical-align:middle;margin-right:6px}.dashed{border-top:2px dashed #dfad58}.canvas{height:calc(100vh - 315px);min-height:650px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#0e1929;position:relative}.canvas svg{display:block}.sidebar{border-left:1px solid var(--border);padding:22px 20px;background:#101c2c;overflow:auto;max-height:calc(100vh - 250px);min-height:720px;position:sticky;top:70px}h2{font-size:19px;margin:0 0 12px;line-height:1.55}.badge{display:inline-block;padding:5px 9px;border:1px solid #536378;border-radius:5px;font-size:12px;color:var(--orange);margin:0 0 12px}.detail-row{margin:11px 0;line-height:1.6;overflow-wrap:anywhere}.detail-row .key{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}.note{background:#1c2a3c;border-left:3px solid var(--orange);padding:11px 12px;font-size:12px;line-height:1.8;color:#ccd9e8;margin:14px 0}.members{display:flex;flex-direction:column;gap:5px}.members button{text-align:left;padding:8px 10px;font-size:12px}.members small{display:block;color:var(--muted);margin-top:3px}details{margin:13px 0;font-size:12px}summary{cursor:pointer;color:#aec4db}pre{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted);line-height:1.65;font:11px ui-monospace,Consolas,monospace}.footer{padding:0 30px 20px;color:var(--muted);font-size:12px;line-height:1.8}.empty{padding:20px}.zoom-value{min-width:44px;text-align:center;font-size:12px;color:#b9cce0}@media(max-width:1000px){.workspace{grid-template-columns:minmax(0,1fr)}.sidebar{border-left:0;border-top:1px solid var(--border);position:static;max-height:none;min-height:0}.canvas{height:700px}header,.toolbar{padding-left:18px;padding-right:18px}.topline{align-items:flex-start}.tag{white-space:normal}.grow{display:none}}
+</style></head><body>
+<header><div class="topline"><div><h1>聚类层次图</h1><p>从生成阶段、关系轮次到本体候选与成员，逐层查看聚类结果。</p></div><span class="tag">已有本体与成员归属保持冻结</span></div><div id="stats" class="stats"></div></header>
+<div class="toolbar"><input id="search" type="search" placeholder="搜索中文、原名或编号" aria-label="搜索节点"><span id="searchCount" class="muted"></span><button id="expand">展开成员</button><button id="collapse">收起成员</button><span class="grow"></span><label><input id="dependencies" type="checkbox">关系支撑</label><button id="zoomOut" aria-label="缩小">−</button><span id="zoomValue" class="zoom-value">100%</span><button id="zoomIn" aria-label="放大">＋</button><button id="fit">适应宽度</button><button id="export">导出图</button></div>
+<div class="workspace"><main class="canvas-wrap"><div class="legend"><span><i class="dot" style="background:#5dd7b4"></i>属性阶段</span><span><i class="dot" style="background:#b59aff"></i>关系阶段</span><span><i class="dot" style="background:#8495aa"></i>未聚类</span><span><i class="solid"></i>阶段与成员归属</span><span><i class="dashed"></i>关系支撑及连线总权重</span></div><div id="canvas" class="canvas" tabindex="0" aria-label="可展开的聚类层次图"><div class="empty">正在绘制层次图…</div></div><p id="viewStatus" class="muted"></p></main><aside id="detail" class="sidebar"><h2>选择一个节点</h2><p>点击本体候选可以展开成员。点击成员查看名称、身份层级与原始编号。</p><div class="note">实线仅展示生成阶段与成员归属。虚线表示关系支撑，不表示上下位继承或已有本体再次合并。</div></aside></div>
+<div class="footer">这里展示实际聚类的生成层次与成员归属，不表示相似度距离树。候选概念仍需定义和语义审核，图中层级不自动构成正式本体分类。</div>
+<script id="hierarchy-data" type="application/json">__HIERARCHY_DATA__</script>
+<script>
+'use strict';
+const data=JSON.parse(document.getElementById('hierarchy-data').textContent),$=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const nodes=new Map(),parents=new Map();
+function indexTree(node,parent=null){nodes.set(node.id,node);if(parent)parents.set(node.id,parent);for(const child of node.children||[])indexTree(child,node)}
+indexTree(data.root);
+let collapsed=new Set([...nodes.values()].filter(n=>n.kind==='ontology'||n.kind==='unassigned'||n.kind==='type_group').map(n=>n.id));
+let selectedId=null,matched=new Set(),zoom=1,lastWidth=1200,searchSnapshot=null;
+function svgNode(tag,attrs={}){const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
+function htmlNode(tag,text,className){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n}
+function isUnassigned(node){for(let n=node;n;n=parents.get(n.id))if(n.kind==='unassigned')return true;return false}
+function stage(node){for(let n=node;n;n=parents.get(n.id)){if(n.stage)return n.stage;if(n.kind==='unassigned')return 'unassigned'}return ''}
+function color(node){const s=stage(node);return s==='attributes'?'#5dd7b4':s==='relations'?'#b59aff':s==='unassigned'?'#8495aa':'#84b7e7'}
+function wrapLabel(label,max=28){const lines=[];let line='',used=0;for(const ch of String(label)){const w=/[\x00-\x7f]/.test(ch)?0.55:1;if(used+w>max&&line){lines.push(line);line='';used=0}line+=ch;used+=w}if(line)lines.push(line);return lines.length?lines:['']}
+function geometry(node){
+ const x=node.kind==='root'?30:node.kind==='stage'||node.kind==='unassigned'?265:node.kind==='round'||node.kind==='type_group'?505:node.kind==='ontology'?735:1140;
+ const width=node.kind==='root'?190:node.kind==='stage'||node.kind==='unassigned'?210:node.kind==='round'||node.kind==='type_group'?195:node.kind==='ontology'?350:310;
+ const lines=wrapLabel(node.label,(width-35)/14),meta=node.kind==='ontology'?2:node.kind==='entity'?1:0;
+ return {x,width,lines,height:Math.max(46,lines.length*18+22+meta*17)};
+}
+function detailRow(key,value){const row=htmlNode('div',undefined,'detail-row');row.appendChild(htmlNode('span',key,'key'));row.appendChild(htmlNode('span',String(value)));$('detail').appendChild(row)}
+function idDetails(title,values){const box=htmlNode('details');box.appendChild(htmlNode('summary',title));box.appendChild(htmlNode('pre',values.join('\n')));$('detail').appendChild(box)}
+function selectNode(id){
+ const node=typeof id==='object'?id:nodes.get(id);if(!node)return;
+ selectedId=node.id;const panel=$('detail');panel.replaceChildren();panel.appendChild(htmlNode('h2',node.label));
+ const kindLabels={root:'全部对象',stage:'生成阶段',round:'关系轮次',ontology:'本体候选',entity:'实体成员',unassigned:'未聚类对象',type_group:'对象类型'};
+ panel.appendChild(htmlNode('span',kindLabels[node.kind]||node.kind,'badge'));
+ if(node.kind==='ontology'){
+  if(node.assessment){detailRow('初审状态',node.assessment.label);if(node.assessment.note)panel.appendChild(htmlNode('div',node.assessment.note,'note'))}
+  detailRow('生成阶段',node.stage==='attributes'?'天然属性聚类':node.stage==='relations'?'关系聚类':'已有冻结本体');
+  if(node.round)detailRow('生成轮次','第 '+node.round+' 轮');
+  detailRow('成员数量',node.member_count);if(node.identity_level)detailRow('成员身份层级',node.identity_level);
+  if(node.minimum_similarity!==undefined&&node.minimum_similarity!==null)detailRow('最小相似度',Number(node.minimum_similarity).toFixed(4));
+  if(node.shared_attributes&&node.shared_attributes.length)detailRow('共享天然属性',node.shared_attributes.join('；'));
+  panel.appendChild(htmlNode('div','相似度用于分组，不代表正确率。候选尚未通过正式本体语义验收。','note'));
+  idDetails('本体原始编号',[node.id]);
+  const list=htmlNode('div',undefined,'members');
+  for(const child of node.children||[]){const button=htmlNode('button',child.label);button.appendChild(htmlNode('small',child.identity_level||'实体成员'));button.onclick=()=>{reveal(child.id);selectNode(child.id);drawTree();scrollToNode(child.id)};list.appendChild(button)}
+  panel.appendChild(htmlNode('h3','成员'));panel.appendChild(list);
+ }else if(node.kind==='entity'){
+  if(node.original_name)detailRow('原文名称',node.original_name);if(node.type)detailRow('实体类型',node.type);if(node.identity_level)detailRow('身份层级',node.identity_level);
+  if(node.intrinsic_feature_count!==undefined)detailRow('天然属性数量',node.intrinsic_feature_count);
+  if(node.reason)detailRow('未聚类原因',node.reason);
+  if(node.parent_ontology){const owner=nodes.get(node.parent_ontology);detailRow('归属本体候选',owner?owner.label:node.parent_ontology)}
+  idDetails('实体原始编号',[node.id]);
+ }else{
+  detailRow('直接子节点数',(node.children||[]).length);
+  panel.appendChild(htmlNode('div',node.kind==='round'&&!(node.children||[]).length?'本轮未生成新本体，聚类在此停止。':'点击节点右侧的圆形按钮可展开或收起分支。','note'));
+ }
+}
+function selectDependency(edge){
+ const panel=$('detail');panel.replaceChildren();panel.appendChild(htmlNode('h2','关系支撑 · 权重 '+edge.weight));
+ detailRow('来源冻结本体',(nodes.get(edge.source)||{}).label||edge.source);detailRow('本轮新本体',(nodes.get(edge.target)||{}).label||edge.target);detailRow('生成轮次','第 '+edge.round+' 轮');detailRow('原始连线总权重',edge.weight);
+ panel.appendChild(htmlNode('div','累计该轮新本体成员与来源冻结本体成员之间的原始语义连线。此线表示聚类依据，不表示继承、合并或本体再次聚类。','note'));
+ idDetails('原始关系编号',edge.connection_ids||[]);
+}
+function reveal(id){let n=nodes.get(id);while(n){const parent=parents.get(n.id);if(parent)collapsed.delete(parent.id);n=parent}}
+function scrollToNode(id){const el=document.getElementById('tree-node-'+id);if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'})}
+function drawTree(){
+ const visible=[],positions=new Map();let y=24;
+ function layout(node){const box=geometry(node),children=collapsed.has(node.id)?[]:node.children||[];visible.push(node);let center;if(children.length){const first=y;for(const child of children)layout(child);const firstPos=positions.get(children[0].id),lastPos=positions.get(children[children.length-1].id);center=(firstPos.cy+lastPos.cy)/2;if(y-first<box.height+16)y=first+box.height+16}else{center=y+box.height/2;y+=box.height+16}positions.set(node.id,{...box,cy:center,top:center-box.height/2})}
+ layout(data.root);
+ let width=Math.max(1100,...[...positions.values()].map(p=>p.x+p.width+35)),height=Math.max(350,y+24);
+ if($('dependencies').checked)width=Math.max(width,1250);
+ lastWidth=width;
+ const svg=svgNode('svg',{id:'hierarchy-svg',xmlns:NS,viewBox:'0 0 '+width+' '+height,width:width*zoom,height:height*zoom,role:'img','aria-label':'聚类阶段、本体候选与成员的层次图',style:'background:#0e1929;font-family:system-ui,Microsoft YaHei,sans-serif'});
+ const treeLinks=svgNode('g');svg.appendChild(treeLinks);
+ for(const node of visible){const parent=parents.get(node.id);if(!parent||!positions.has(parent.id))continue;const a=positions.get(parent.id),b=positions.get(node.id),x1=a.x+a.width,x2=b.x,mid=(x1+x2)/2;treeLinks.appendChild(svgNode('path',{d:'M '+x1+' '+a.cy+' C '+mid+' '+a.cy+' '+mid+' '+b.cy+' '+x2+' '+b.cy,fill:'none',stroke:color(node),'stroke-width':1.2,opacity:0.43}))}
+ let displayedDependencies=0;
+ if($('dependencies').checked){
+  const layer=svgNode('g');svg.appendChild(layer);
+  for(const edge of data.dependency_edges||[]){const a=positions.get(edge.source),b=positions.get(edge.target);if(!a||!b)continue;displayedDependencies++;
+   const arc=Math.max(65,Math.min(140,Math.abs(a.cy-b.cy)*0.11)),x=a.x-9,control=x-arc;
+   const path=svgNode('path',{d:'M '+x+' '+a.cy+' C '+control+' '+a.cy+' '+control+' '+b.cy+' '+x+' '+b.cy,fill:'none',stroke:'#efbc68','stroke-width':1.4,'stroke-dasharray':'5 4',opacity:0.8,style:'cursor:pointer'});
+   path.appendChild(svgNode('title'));path.firstChild.textContent='关系支撑，权重 '+edge.weight;path.onclick=e=>{e.stopPropagation();selectDependency(edge)};layer.appendChild(path);
+   const text=svgNode('text',{x:control+arc/4-2,y:(a.cy+b.cy)/2-3,fill:'#ffd18c','font-size':11,'text-anchor':'end','paint-order':'stroke',stroke:'#0e1929','stroke-width':4,style:'cursor:pointer'});text.textContent=edge.weight;text.onclick=e=>{e.stopPropagation();selectDependency(edge)};layer.appendChild(text);
+  }
+ }
+ for(const node of visible){
+  const p=positions.get(node.id),group=svgNode('g',{id:'tree-node-'+node.id,tabindex:0,role:'button','aria-label':node.label,style:'cursor:pointer'}),nodeColor=color(node),selected=selectedId===node.id,highlight=matched.has(node.id);
+  const bg=svgNode('rect',{x:p.x,y:p.top,width:p.width,height:p.height,rx:8,fill:highlight?'#3d3420':selected?'#253d56':node.kind==='ontology'?'#17283d':'#122238',stroke:highlight?'#ffd17a':selected?'#e1edf9':nodeColor,'stroke-width':selected||highlight?2:1,'stroke-opacity':selected||highlight?1:0.65});group.appendChild(bg);
+  const title=svgNode('title');title.textContent=node.label+(node.kind==='ontology'?' · '+node.member_count+' 个成员':'');group.appendChild(title);
+  p.lines.forEach((line,i)=>{const t=svgNode('text',{x:p.x+13,y:p.top+22+i*18,fill:'#e4edf8','font-size':14});t.textContent=line;group.appendChild(t)});
+  if(node.kind==='ontology'){
+   const meta=svgNode('text',{x:p.x+13,y:p.top+22+p.lines.length*18,fill:'#b6c9df','font-size':11});meta.textContent=node.member_count+' 个成员 · '+(node.identity_level||'身份层级待补充');group.appendChild(meta);
+   const assessment=svgNode('text',{x:p.x+13,y:p.top+39+p.lines.length*18,fill:nodeColor,'font-size':11});assessment.textContent=(node.assessment||{}).label||'本体候选 · 待审核';group.appendChild(assessment);
+  }else if(node.kind==='entity'){
+   const meta=svgNode('text',{x:p.x+13,y:p.top+22+p.lines.length*18,fill:'#9bb0ca','font-size':10});meta.textContent=node.id.slice(0,12)+'… · '+(node.identity_level||'');group.appendChild(meta);
+  }
+  const click=()=>{selectNode(node.id);if((node.children||[]).length){if(collapsed.has(node.id))collapsed.delete(node.id);else collapsed.add(node.id)}drawTree()};group.onclick=click;group.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();click()}};
+  if((node.children||[]).length){const cx=p.x+p.width,cy=p.cy;group.appendChild(svgNode('circle',{cx,cy,r:9,fill:nodeColor,stroke:'#0e1929','stroke-width':2}));const sign=svgNode('text',{x:cx,y:cy+4,'text-anchor':'middle',fill:'#0b1522','font-size':13,'font-weight':700});sign.textContent=collapsed.has(node.id)?'+':'−';group.appendChild(sign)}
+  svg.appendChild(group);
+ }
+ $('canvas').replaceChildren(svg);$('zoomValue').textContent=Math.round(zoom*100)+'%';$('viewStatus').textContent='当前显示 '+visible.length+' 个节点'+($('dependencies').checked?' · '+displayedDependencies+' 条关系支撑线':'')+' · 点击节点展开分支，滚动查看完整层次';
+}
+function searchTree(){
+ const q=$('search').value.trim().toLowerCase();matched.clear();
+ if(!q){if(searchSnapshot){collapsed=new Set(searchSnapshot);searchSnapshot=null}$('searchCount').textContent='';drawTree();return}
+ if(!searchSnapshot)searchSnapshot=new Set(collapsed);else collapsed=new Set(searchSnapshot);
+ for(const node of nodes.values()){const hay=[node.label,node.original_name,node.id,node.type].filter(Boolean).join(' ').toLowerCase();if(hay.includes(q)){matched.add(node.id);reveal(node.id)}}
+ $('searchCount').textContent=matched.size+' 个匹配';drawTree();
+ const first=[...matched].map(id=>nodes.get(id)).find(n=>n.kind==='entity'||n.kind==='ontology');if(first)setTimeout(()=>scrollToNode(first.id),30);
+}
+function toggleAll(expand=true){
+ $('search').value='';matched.clear();searchSnapshot=null;$('searchCount').textContent='';
+ for(const node of nodes.values())if((node.children||[]).length){if(isUnassigned(node)){collapsed.add(node.id)}else if(expand)collapsed.delete(node.id);else if(node.kind==='ontology')collapsed.add(node.id);else collapsed.delete(node.id)}
+ drawTree();
+}
+function changeZoom(value){zoom=Math.max(0.3,Math.min(2,value));drawTree()}
+function fitView(){changeZoom(Math.min(1,Math.max(0.3,($('canvas').clientWidth-20)/lastWidth)))}
+function exportSvg(){const svg=document.getElementById('hierarchy-svg');if(!svg)return;const copy=svg.cloneNode(true);copy.setAttribute('width',lastWidth);copy.setAttribute('height',svg.viewBox.baseVal.height);const blob=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='聚类层次图.svg';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+for(const [key,text,c] of [['objects','全部对象','#84b7e7'],['ontologies','本体候选','#e2ebf5'],['attribute_ontologies','属性阶段','#5dd7b4'],['relation_ontologies','关系阶段','#b59aff'],['clustered_members','已聚类成员','#5dd7b4'],['unassigned','未聚类','#9aacc2']]){const card=htmlNode('div',undefined,'stat'),number=htmlNode('strong',data.summary[key]);number.style.color=c;card.appendChild(number);card.appendChild(htmlNode('span',text));$('stats').appendChild(card)}
+$('search').oninput=searchTree;$('expand').onclick=()=>toggleAll(true);$('collapse').onclick=()=>toggleAll(false);$('dependencies').onchange=drawTree;$('zoomIn').onclick=()=>changeZoom(zoom*1.2);$('zoomOut').onclick=()=>changeZoom(zoom/1.2);$('fit').onclick=fitView;$('export').onclick=exportSvg;
+drawTree();fitView();
+</script></body></html>

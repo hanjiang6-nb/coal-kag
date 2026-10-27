@@ -1,5 +1,23 @@
 # 交接记录
 
+## 2026-10-27 — 最小属性本体，随后找本体之间的关系
+
+- 用户已先确认例子并授权试跑：不同品种按固有属性抽象为最小本体；关系阶段只找本体之间的关系，不产生新本体。旧方案及旧 15 本体产物原样保留，不作为本轮输入。
+- 开始前检查 main 与工作区，成功 `git fetch origin` 并读取 `git show origin/main:HANDOFF.md`；远程基线 93ac790，本地此前 4 个提交待上传。原有 MARKDOWN_QUALITY.md 和未跟踪 scripts/report_markdown_audit.py 不修改或提交。
+- 当前设备 PUGSS，Windows 10.0.26200 / PowerShell / Python 3.8.8 / Node.js v16.16.0，项目 `F:\kag`；本次未操作服务器。服务器实际环境、项目路径和连接方式见 SERVER.md。
+- 新入口 `scripts/cluster_minimal_ontologies.py`，中文视图模板 `scripts/minimal_ontology_report.html`；具体核心词汇、组成规则与“最小”定义见 DOMAIN_FEATURES.md。组成识别是明确的首轮受控规则，尚不覆盖所有物质。
+- 正式运行：`python scripts/cluster_minimal_ontologies.py --source artifacts/domain_features_20261027_release --output artifacts/minimal_ontologies_20261027_verified`。
+- 全量验证：同一命令加 `--validate-only`，通过。输出图完整节点和边均精确校验，发现并修复了最初只检查原始图节点/边的缺口，新增独立篡改检查。
+- 结果：537 个种类候选项、8 个属性可用；2 个候选本体，5 个矿物种类，52 次默认可用文献提及。二硫化铁矿物含黄铁矿/白铁矿；六方晶族碳酸盐矿物含方解石/菱铁矿/白云石。
+- 本体间关系为 0：174 原始已断言关系没有双端同时已归类的证据，全部存入 residual_relations.jsonl，不用技术边或共同邻居补造关系。532 项未归类，岩石品种尚缺可用属性。
+- 冻结复跑：`python scripts/cluster_minimal_ontologies.py --source artifacts/minimal_ontologies_20261027_verified --output artifacts/minimal_ontologies_freeze_replay_20261027`，随后相同命令加 `--validate-only`；均通过，原 2 本体节点保持不变，新增 0。
+- 浏览器：`python artifacts/minimal_ontologies_20261027_verified/check_minimal_browser.py`，真实 Chrome 检查 2 本体/5 种类、零关系不造线、中英文查未归类、定义详情与 SVG 导出通过；该本机脚本和 browser_validation.json 留在忽略目录。已渲染并查看 preview.png。
+- 首轮早期输出 `artifacts/minimal_ontologies_20261027_trial/` 为历史试跑，正式结果请使用 verified 目录。`属性本体与本体间关系.html` 和 SVG、原始数据及所有生成物均不上传 GitHub。
+- `python -m unittest discover -s tests -v`：38 项全部通过，含新增 7 项多品种/核心维度/方向权重/多类归属/完整导出图篡改拒绝/安全嵌入测试。另核对输入 SHA-256 未变，冻结复跑的两个本体完整 payload 精确相等。
+- 提交前运行 `python scripts/check_repository.py`、暂存区凭据检查和 `git diff --cached --check`。
+- 下一步优先补充不同岩石品种的组成/结构等有来源属性，以及已归类种类之间的真实关系；本轮是候选发现和工程验证，未声称完成正式本体语义验收。
+- 回滚代码 `git revert <本次提交>`；输出均在新目录，原 data、特征图和旧聚类不改写。提交后推送 GitHub；失败保留本地提交，待重试 `git push origin main`。
+
 ## 2026-10-27 — 聚类层次图
 
 - 开始前检查 main、工作区及远程，成功执行 `git fetch origin` 并读取 `git show origin/main:HANDOFF.md`；远程基线 93ac790，本地已有 3 个待上传提交。

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>两阶段本体聚类</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#deebf5;font:14px system-ui,"Microsoft YaHei",sans-serif}header{padding:28px 36px;border-bottom:1px solid #29405a}h1{font-size:26px;margin:0 0 14px}p{line-height:1.8;color:#9eb3ce}main{padding:25px 36px}.cards{display:flex;gap:15px;flex-wrap:wrap}.card{background:#14243a;border:1px solid #344c65;border-radius:10px;padding:17px;min-width:180px}.card strong{display:block;font-size:28px;color:#5ee1bf}select,input,button{background:#192c45;color:#e3eef6;border:1px solid #35516d;padding:11px;border-radius:6px;margin:9px 9px 9px 0}button{cursor:pointer}.layout{display:grid;grid-template-columns:1fr 1.15fr;gap:24px;margin-top:15px}#list{max-height:62vh;overflow:auto}#list button{display:block;width:97%;text-align:left;margin:5px 0;line-height:1.7}pre{background:#142238;padding:20px;border-radius:8px;white-space:pre-wrap;word-break:break-word;line-height:1.7}#network{max-height:620px;overflow:auto;border:1px solid #29405a;border-radius:10px;margin-bottom:25px}.hint{font-size:12px;color:#9eb3ce}@media(max-width:900px){.layout{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>天然属性 → 本体 · 关系权重 → 新本体</h1><p>第一阶段仅比较客观物性，不使用来源、用途或成因标签。形成的本体立即冻结。第二阶段只比较剩余节点到冻结本体的原始关系连线总数，产生新的本体；已有本体和成员不再合并或重新分配。</p></header>
+<main><div id="stats" class="cards"></div>
+<h2>逐轮关系权重图</h2><p>左侧是本轮固定的本体，右侧是本轮产生的新本体。灰色节点仅汇总展示尚未聚类的连通节点，不代表新本体。线上数字是原始连线数量之和；点击可追溯原文。</p>
+<select id="graphRound" aria-label="选择关系轮次"></select><div id="network"></div>
+<select id="mode" aria-label="选择记录类型"><option value="attributes">属性阶段本体 / 已有冻结本体</option><option value="relations">关系阶段新本体</option><option value="weights">连线权重与原始证据</option><option value="unassigned">未聚类节点</option></select>
+<input id="search" placeholder="搜索中文、原文或编号"><span id="count"></span>
+<div class="layout"><section id="list"></section><section><h2 id="title">选择记录</h2>
+<select id="detailMode" aria-label="详情显示方式"><option value="zh">中文说明</option><option value="raw">原始数据</option></select>
+<span class="hint">原文证据、不确定专名与化学式保留原样</span>
+<pre id="detail">连线权重等于跨本体边界的原始已断言语义关系数，每条关系计一次。成员边、属性边、来源边和未核实关系不计入。两阶段结果均为候选本体，不代表已完成领域专家验收。</pre></section></div></main>
+<script id="data" type="application/json">PAYLOAD</script><script>
+const data=JSON.parse(document.getElementById('data').textContent),$=id=>document.getElementById(id),names=new Map(Object.entries(data.display_names));
+const term=s=>data.term_labels[s]||data.term_labels[s.toLowerCase()]||s;
+const label=r=>names.get(r.id||r.entity)||r.label||r.name||r.entity||r.id;
+let selected=null;
+function chinese(value,key=''){
+  if(value===null)return '未提供';
+  if(typeof value==='boolean')return value?'是':'否';
+  if(typeof value==='string'){
+    if(['evidence_text','evidence','id','connection_ids','head','tail','evidence_sentence_ids'].includes(key))return value;
+    if(names.has(value))return names.get(value)+'（编号：'+value+'）';
+    return term(value);
+  }
+  if(Array.isArray(value))return value.map(v=>chinese(v,key));
+  if(typeof value==='object'){
+    const out={};for(const [k,v] of Object.entries(value)){
+      const translatedKey=data.field_labels[k]||(names.has(k)?names.get(k)+'（编号：'+k+'）':term(k));
+      out[translatedKey]=chinese(v,k);
+      if(k==='name'&&typeof v==='string'&&term(v)!==v)out['原文名称']=v;
+    }return out;
+  }return value;
+}
+function renderDetail(){if(selected)$('detail').textContent=JSON.stringify($('detailMode').value==='raw'?selected:chinese(selected),null,2)}
+function show(row,title){selected=row;$('title').textContent=title;renderDetail()}
+$('detailMode').onchange=renderDetail;
+for(const [text,value] of [['已有冻结本体',data.summary.existing_frozen_ontologies],['属性阶段新本体',data.summary.new_attribute_ontologies],['关系阶段新本体',data.summary.new_relation_ontologies],['首轮边界连线总权重',data.summary.first_round_boundary_weight_total],['末轮边界连线总权重',data.summary.boundary_weight_total],['未聚类节点',data.summary.unassigned]]){
+ const c=document.createElement('div');c.className='card';const s=document.createElement('strong');s.textContent=value;c.appendChild(s);c.appendChild(document.createTextNode(text));$('stats').appendChild(c);
+}
+function withEvidence(r){return {...r,connections:r.connection_ids.map(k=>data.connections[k]||{id:k})}}
+function filter(){
+ const mode=$('mode').value,q=$('search').value.trim().toLowerCase();
+ let rows=mode==='attributes'?data.anchors:mode==='relations'?data.stage2:mode==='weights'?data.boundary:data.unassigned;
+ rows=rows.filter(r=>([label(r),r.label,r.name,r.id,r.entity,r.ontology,names.get(r.ontology),...((r.members||[]).map(k=>data.original_names[k]||'')),data.original_names[r.entity]].join(' ')).toLowerCase().includes(q));
+ $('list').replaceChildren();$('count').textContent=rows.length+' 项';
+ for(const r of rows){const b=document.createElement('button');b.textContent=label(r);if(mode==='weights')b.textContent='第 '+r.round+' 轮 · '+b.textContent+' → '+names.get(r.ontology)+' · 权重 '+r.weight;b.onclick=()=>show(mode==='weights'?withEvidence(r):r,b.textContent);$('list').appendChild(b)}
+}
+$('mode').onchange=filter;$('search').oninput=filter;filter();
+const NS='http://www.w3.org/2000/svg';function svgNode(tag,attrs){const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
+for(let r=1;r<=data.summary.relation_rounds;r++){const o=document.createElement('option');o.value=r;o.textContent='第 '+r+' 轮';$('graphRound').appendChild(o)}
+function drawNetwork(){
+ const round=Number($('graphRound').value),left=[...data.anchors,...data.stage2.filter(o=>o.round<round)],fresh=data.stage2.filter(o=>o.round===round),rows=data.boundary.filter(r=>r.round===round),owner=new Map();
+ for(const o of fresh)for(const member of o.members)owner.set(member,o.id);
+ const unresolved=[...new Set(rows.filter(r=>!owner.has(r.entity)).map(r=>r.entity))],right=[...fresh];
+ if(unresolved.length)right.push({id:'display-only',label:'未聚类节点展示汇总（'+unresolved.length+'）',members:unresolved,display_only:true});
+ const H=Math.max(360,left.length*62+60,right.length*62+60),svg=svgNode('svg',{viewBox:'0 0 1380 '+H,width:'100%',style:'min-width:1000px;background:#0e192a'}),pos=new Map();
+ left.forEach((o,i)=>pos.set(o.id,{x:240,y:40+i*62}));right.forEach((o,i)=>pos.set(o.id,{x:1030,y:40+i*Math.max(62,(H-80)/Math.max(1,right.length-1))}));
+ const totals=new Map();for(const r of rows){const target=owner.get(r.entity)||'display-only',key=r.ontology+'|'+target;if(!totals.has(key))totals.set(key,{source:r.ontology,target,weight:0,records:[]});const group=totals.get(key);group.weight+=r.weight;group.records.push(r)}
+ for(const edge of totals.values()){
+  const a=pos.get(edge.source),b=pos.get(edge.target);if(!a||!b)continue;
+  const line=svgNode('path',{d:'M '+a.x+' '+a.y+' C '+(a.x+260)+' '+a.y+' '+(b.x-260)+' '+b.y+' '+b.x+' '+b.y,fill:'none',stroke:'#547695','stroke-width':Math.max(1,Math.sqrt(edge.weight)*1.4),opacity:0.7,style:'cursor:pointer'});
+  line.onclick=()=>show({...edge,records:edge.records.map(withEvidence)},'累计关系权重 '+edge.weight);svg.appendChild(line);
+  const text=svgNode('text',{x:(a.x+b.x)/2,y:(a.y+b.y)/2-6,fill:'#b7cbe2','font-size':13});text.textContent=edge.weight;svg.appendChild(text);
+ }
+ for(const [items,color] of [[left,'#4adbb9'],[right,'#b298ff']])for(const o of items){
+  const p=pos.get(o.id),circle=svgNode('circle',{cx:p.x,cy:p.y,r:7,fill:o.display_only?'#8292a9':color,style:'cursor:pointer'});
+  circle.onclick=()=>show(o,label(o));svg.appendChild(circle);
+  const text=svgNode('text',{x:p.x+(items===left?-14:14),y:p.y+4,'text-anchor':items===left?'end':'start',fill:'#d8e6f5','font-size':12}),name=label(o);
+  text.textContent=name.length>29?name.slice(0,28)+'…':name;
+  const title=svgNode('title',{});title.textContent=name;text.appendChild(title);svg.appendChild(text);
+ }$('network').replaceChildren(svg);
+}
+$('graphRound').onchange=drawNetwork;drawNetwork();
+</script></body></html>

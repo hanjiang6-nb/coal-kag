@@ -1,5 +1,20 @@
 # 交接记录
 
+## 2026-10-27 — 当前两阶段本体页面中文化
+
+- 开始前检查分支和工作区，成功执行 `git fetch origin` 并读取 `git show origin/main:HANDOFF.md`；远程基线为 93ac790，本地此前有 f0b6663、e4aa229 两个待上传提交。
+- 当前设备 Pugss，Windows / PowerShell，Python 3.8.8，Node.js；项目路径 `F:\kag`。本次未连接或修改服务器，已有服务器信息仍见 SERVER.md。
+- 新增 `graph_zh_glossary.py`、`graph_zh_geology.py` 可复用译名及术语字典，`ontology_report_zh.py` 显示元数据和 `two_stage_report.html` 模板。未知专名保留原拼写，不推断实体身份。
+- 默认中文详情为成员和属性编号补充名称，原始数据可切换查看；搜索同时支持中文、原名及编号。公式保持大小写，原文证据不翻译，不修改原始事实或聚类依据。
+- 本地页面：`artifacts/two_stage_ontologies_20261027_verified/两阶段本体聚类.html`。15 个本体及其全部 100 个成员均有中文名称或中文通名部分；Soutpansberg 等不确定专名保留。
+- 执行 `python -` 调用 `report()` 刷新当前 HTML，并逐文件核对 SHA-256：13 个 JSONL、SQLite 和 summary 文件均保持不变。翻译前 HTML 备份为同目录 `report_before_zh.html`。
+- 验证命令 `python -m unittest discover -s tests -v`：27 项通过，含中文/英文搜索、中文与原始详情切换、证据安全嵌入、公式及原始成员/权重保持。
+- 验证命令 `python scripts/validate_two_stage_ontologies.py --source artifacts/domain_features_20261027_release --output artifacts/two_stage_ontologies_20261027_verified`：通过，核对 880 对象、15 个本体、174 原始关系和 85 条跨轮边界记录。
+- 已执行 Chrome headless 渲染，截图 `preview_zh.png` 并查看；此检查不代表对所有专业译名或本体语义进行专家验收。
+- 提交前执行 `python scripts/check_repository.py`、`git diff --cached --check` 及暂存区凭据检查。只提交源代码、模板、测试和交接，不提交数据及可视化产物；原有 MARKDOWN_QUALITY.md 修改和 scripts/report_markdown_audit.py 保持原样。
+- 下一设备先检查工作区并 `git fetch origin`，可快进时 `git pull --ff-only`。生成图谱未通过 GitHub 分发，需保留本机 artifacts 或在具备数据的设备重新运行构建入口；无需显卡完成中文显示。
+- 回滚代码：`git revert <本次提交>`；仅恢复旧显示时可把本地 `report_before_zh.html` 复制回原页面。已有本体、成员归属和业务数据均未改写。
+
 ## 2026-10-27 — 天然属性生成本体，再按累计关系生成新本体
 
 - 用户最终澄清：两阶段都生成“本体”，此前“实体”为笔误。第一阶段使用天然/客观物性；关系阶段按已聚类本体成员到未聚类节点的原始连线总数计算权重；已有本体不可再次聚类。

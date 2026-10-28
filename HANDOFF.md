@@ -1,5 +1,20 @@
 # 交接记录
 
+## 2026-10-28 — 清空新服务器全部用户数据，保留系统
+
+- 用户撤销了“删除今天的工作”，本地既有文件和未提交开发继续保留、停止；随后提供新服务器并明确选择“清空服务器上的全部用户数据，保留系统”。本轮仅执行该服务器清理及交接记录，不继续本体开发。
+- 开始前检查 main、工作区与远程，成功执行 `git fetch origin` 并读取 `git show origin/main:HANDOFF.md`，远程基线 7552fcf。原有 MARKDOWN_QUALITY.md、两个候选学习文件的修改，以及三个未跟踪脚本/测试均未修改或纳入本次提交。
+- 当前控制设备 Windows / PowerShell / Python 3.8.8，项目 `F:\kag`；实际远端 `connect.westd.seetacloud.com:37518`，用户 root，主机名 `autodl-container-65d14488ce-8a8de544`，Ubuntu 22.04.5 LTS / Linux 5.15.0-78-generic x86_64。详细运行时和服务见 SERVER.md，密码不落盘、不提交。
+- 清理前通过 SSH 运行 `df -hT`、`findmnt`、`du`、`ps` 及 Python 路径/挂载/进程引用检查；确认无训练任务、无待删目录内嵌套挂载，基础服务由 base miniconda 启动。
+- 本机忽略目录 `artifacts/server_cleanup_20261028_37518/` 保留不含凭据的清理脚本、逐项审计和检查结果；脚本经 SSH 标准输入在远端运行 `/root/miniconda3/bin/python -` 预检及 `/root/miniconda3/bin/python - --apply` 执行，均退出 0。清理脚本限制确切主机、显式路径、挂载边界及抗符号链接删除；没有执行系统根目录清空。
+- 删除数据盘下 huggingface_cache、kgseg_research、models、visual_first、visual_first_v1；删除 /root 的 xm_train、旧迁移目录、用户缓存、自建 kgseg 环境、Conda 包缓存、Jupyter 用户状态和过期运行记录；清理已核实的 /tmp 用户文件与误传的 `/C:` 目录。保留 `/root/autodl-tmp/.autodl`、`/init`、公共只读挂载、SSH、base miniconda 及平台服务运行项。
+- 共处理 246 项；数据盘释放 174706388992 字节（约 162.7 GiB），系统盘可写层释放 14438404096 字节（约 13.4 GiB），合计约 176.2 GiB。清理后 `df -h / /root/autodl-tmp`：系统可写层约 62 MiB，数据盘仅约 2.7 MiB 平台文件。
+- 独立新建 SSH 会话运行 `/root/miniconda3/bin/python -` 执行本机 `postcheck_remote.py` 内容：通过。245 个目标保持不存在；唯一重建的 `.cache` 只有登录自动生成的零字节 `motd.legal-displayed` 系统提示标记，不含业务数据。9 个受保护系统/认证/基础运行文件 SHA-256 前后一致，没有大于 1 MiB 的已删除但仍被进程打开的文件。
+- SSH、Supervisor、Jupyter、TensorBoard、面板与代理进程正常；Jupyter `http://127.0.0.1:8888/jupyter/` 和 TensorBoard `http://127.0.0.1:6007/` 均 HTTP 200；基础 Python 3.12.3、JupyterLab 4.4.5 导入和 `conda --version`（24.4.0）通过。首次复核因登录重建缓存标记及错用 Jupyter 根路径 404 而未通过，按实际平台行为修正检查后重新全部通过；远端没有 `ss`，监听端口改从 `/proc/net/tcp*` 核实。
+- 本次只改三份交接文档，提交前运行 `python scripts/check_repository.py`、暂存区凭据检查和 `git diff --cached --check`；不重新运行已停止开发的算法测试，不声称本轮验证其未提交代码。未执行重启、未验证 GPU/CUDA 能力。
+- 下一步：服务器当前未部署项目，恢复工作需重新上传所需代码和数据、创建项目环境；不要把本地未完成候选学习当成已验收版本。提交后推送 GitHub；失败保留本地提交并执行 `git push origin main` 重试。
+- 回滚：`git revert <本次提交>` 只撤销文档变更；服务器数据已按要求直接删除、没有新建备份，无法通过 Git 恢复，若需恢复只能使用此前独立备份或原始数据来源。
+
 ## 2026-10-27 — 知识图谱到可复用本体候选
 
 - 用户确认大方向为从知识图谱构建本体，本轮实现候选学习层：允许重叠、保留多层，先给 C 编号；具体命名、正式本体语义审核及领域约束后置。

@@ -1,5 +1,20 @@
 # 交接记录
 
+## 2026-10-28 — 下载 Qwen3-VL-32B-Instruct，完整性验证通过
+
+- 用户在服务器清理后发出新指令下载 Qwen3-VL-32B；选择官方 `Qwen/Qwen3-VL-32B-Instruct` BF16 原始版，已在过程中告知。旧本体开发保持停止，本地已有未提交改动均保留，本轮仅提交三份交接文档。
+- 控制端 Windows / PowerShell / Python 3.8.8，仓库 `F:\kag`，main 本地基线 1fdb95e；检查工作区后尝试 `git fetch origin`，因连接 GitHub 重置/超时未成功，远程最新状态未确认，已读取本地交接。上次服务器清理提交仍在本地等待推送；不强推或改写共享历史。
+- 远端 `connect.westd.seetacloud.com:37518`，root，实际主机名 `autodl-container-65d14488ce-8a8de544`，Ubuntu 22.04.5 LTS / x86_64；Python 3.12.3、CPU 配额 0.5 核、内存限制 2 GiB。`nvidia-smi -L` 返回 `No devices found.`；仅下载和文件验证，不启动推理。基础平台环境保持不变。
+- 模型目录 `/root/autodl-tmp/models/Qwen3-VL-32B-Instruct`；完整 27 文件共 66726520993 字节（约 66.7 GB / 62.1 GiB）。官方 ModelScope 仓库 `https://modelscope.cn/models/Qwen/Qwen3-VL-32B-Instruct`，文件清单 API 为同站 `/api/v1/models/Qwen/Qwen3-VL-32B-Instruct/repo/files?Revision=master&Recursive=true`。
+- 保存清单后，每文件使用其固定 `Revision`、`Size` 和 `Sha256` 下载；权重/索引主版本为 8ee644102b9aef163388c49635ca1e57ae2cb040，README 等其他文件保留各自 revision，未误当成单一版本。14 个权重的大小和 SHA-256 同时与通过 hf-mirror 读取的 Hugging Face 清单一致，HF 清单 revision 为 0cfaf48183f594c314753d30a4c4974bc75f3ccb。
+- 下载脚本 `/root/autodl-tmp/.ops/qwen3_vl_32b_download_20261028/download_worker.py`；实际启动命令 `/root/miniconda3/bin/python -u /root/autodl-tmp/.ops/qwen3_vl_32b_download_20261028/download_worker.py`，以独立后台进程运行，支持 Range 续传与逐文件 SHA-256 检查。起初 4 并行，随后保留 partial 续传为 14 并行；未安装或改动基础 Python 依赖。
+- 2026-10-28 10:29:05 +08:00 完成：27 文件全部 SHA-256 一致；14 safetensors 分片、1,058 个 BF16 张量、索引键和分片归属、连续无洞偏移、shape 字节数、总张量字节数 66714780128 全部通过；所有 JSON 配置可解析。`status.json` 为 complete，结果在同目录 `validation.json`，无 `.download` 残留。
+- 新建 SSH 会话，运行 `/root/miniconda3/bin/python -` 执行本机忽略目录中 `postcheck_remote.py` 内容：退出 0，复核目录与 27 文件清单完全一致、文件大小、逐项校验日志和结果、14 分片 / 1,058 张量及零残留。初次复核按行解析并发 JSON 日志失败，改为连续 JSON 记录解析后重跑通过；该失败不涉及模型内容损坏。
+- `df -h /root/autodl-tmp/models/Qwen3-VL-32B-Instruct`：170 GiB 数据盘，约 63 GiB 已用、108 GiB 可用；系统、SSH 和平台目录仍保留。本机 `artifacts/qwen3_vl_32b_download_20261028/` 保存不含凭据的脚本、清单、下载日志及复核结果；模型权重未传回本机或上传 GitHub。
+- 本次只提交文档，提交前运行 `python scripts/check_repository.py`、暂存区凭据扫描及 `git diff --cached --check`。不重跑已停止的算法开发测试；未做推理、显存占用、GPU/CUDA 或服务部署测试，不能将文件验证视为推理验收。
+- 下一步：按需要配置独立推理环境和 GPU，模型加载路径直接使用上述模型目录；已下载完成，不需重新运行下载。提交后执行 `git push origin main`，若网络失败保留本地提交并重试；如远程前进，先核对交接和差异再同步。
+- 回滚：`git revert <本次提交>` 仅回滚文档，不删除服务器模型。移除模型需要用户另行要求，并先核对确切模型路径和任务状态；用户密码不写入任何文件或提交。
+
 ## 2026-10-28 — 清空新服务器全部用户数据，保留系统
 
 - 用户撤销了“删除今天的工作”，本地既有文件和未提交开发继续保留、停止；随后提供新服务器并明确选择“清空服务器上的全部用户数据，保留系统”。本轮仅执行该服务器清理及交接记录，不继续本体开发。

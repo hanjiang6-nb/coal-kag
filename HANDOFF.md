@@ -1,5 +1,47 @@
 # 交接记录
 
+## 2026-10-31 — 启动4755篇论文正文CPT，完整一轮后台运行
+
+- 用户选择论文原文CPT，要求提高显卡利用率，并明确选择完整训练一轮。本轮不继续已停止的本体开发；原有 `MARKDOWN_QUALITY.md`、两个候选学习文件的修改及三个未跟踪脚本/测试原样保留、不纳入提交。
+- 开始时检查main/工作区，成功 `git fetch origin` 并读取 `git show origin/main:HANDOFF.md`，基线 `c37a93a`。控制端Windows/PowerShell，Python3.8.8，仓库 `F:\kag`；当前服务器 `connect.weste.seetacloud.com:46865` / root，容器 `autodl-container-djwyj4ty9l-824baf4a`，Ubuntu22.04.5、CPU22核、内存110GiB、RTX6000D一张。详细环境见SERVER.md，密码不落盘。
+- 提交前本机直连GitHub连续遇到连接重置/443超时，改用已授权服务器的SSH通道提供仅允许github.com:443的临时本地CONNECT转发；Git仍校验GitHub HTTPS证书，不修改仓库远程或全局代理，不向服务器保存Git凭据。再次fetch成功，确认origin/main仍为c37a93a。临时转发脚本位于本机忽略目录，SSH口令只从标准输入读取。
+- 使用独立环境 `/root/autodl-tmp/envs/qwen-cpt-20261030`（下文 `PY` 指其 `bin/python`），继承已验证的PyTorch2.8.0+cu128，不修改基础CUDA。固定依赖见requirements-cpt.txt；安装日志/exit0和所有训练依赖实际导入验证在 `/root/autodl-tmp/.ops/qwen_cpt_20261030`（下文 `OPS`）。初次PyPI元数据访问遇到输出编码/公网读取问题，改用UTF-8输出和可达镜像安装成功。
+- 当前服务器已具备66.7GB模型和4755篇/约23.6GB图文目录。本次读取远端既有迁移完整性与图片引用审计，补记旧49209→37518迁移成功事实；不是重新上传4755篇。原始文件/图片/基础模型保留。
+
+### 实际数据与模型验证
+
+- 新增 `scripts/prepare_cpt_corpus.py`。先以冻结串行副本运行，后以独立文件名 `OPS/prepare_cpt_corpus_parallel.py` 使用8进程；未覆盖运行中脚本，避免版本SHA记录失真。实际命令均为 `PY <冻结脚本> --corpus-dir /root/autodl-tmp/cpt_multimodal_20261023 --tokenizer-dir /root/autodl-tmp/models/Qwen3-VL-32B-Instruct --output-dir <新输出目录> --block-size 2048`，并行另加 `--workers 8`。
+- 串行输出 `/root/autodl-tmp/training_data/paper_cpt_2048_20261030`，并行正式输入为同路径加 `_parallel`；两次exit0。4755篇实际MD处理前后均与manifest.output_sha256一致；正文266,654,616字节，保留257,907,367字符、78,570,785正文token；移除76417个Markdown图片目标、386个HTML图片标签、611个控制字符，无控制token异常、无完全重复。未检测近重复，历史source路径仅记录来源。
+- 训练/验证/测试4666/48/41篇，37743/337/289块；每块2048，含EOS训练流77,296,675 token，实际因果预测目标77,258,932。每篇一个EOS、不同split不混排、尾部不丢、padding不参与loss，EOS不隔离同块文档间注意力。
+- 通过远端Python逐文件SHA对照，串并行10文件（全部input/mask/metadata及docs_manifest）完全相同，证据 `OPS/serial_parallel_equivalence.json`。最终准备脚本SHA256 `54681c6b818213cf3e25a79adc05fedc729ed8375291e47d5d343a8cd3997393`。
+- 运行 `python OPS/verify_base_model.py` 重新逐文件比对下载时官方ModelScope manifest：27文件/66,726,520,993字节SHA全部一致，证据 `OPS/base_model_postcheck.json`。训练仅更新语言LoRA，未改写基础权重。
+
+### GPU、保存、恢复与磁盘验收
+
+- 新增 `scripts/train_domain_cpt.py`，原生Qwen3VL纯文本forward；禁止意外调用视觉编码器，448个语言投影/896个LoRA矩阵，rank16共134,217,728可训练参数，冻结权重梯度均为空。首步448个B矩阵非零梯度、次步448个A和448个B均非零，实际优化更新通过。
+- 实测BF16微批量1/2分别576.9/591.6 token/s，批量2显存余量不足10%、批量4真实OOM。NF4 QLoRA批量1/2/4分别542.6/532.5/510.9 token/s，批量8真实OOM后停止扩张。选择BF16、批量1，而不是按显存占满选择低吞吐配置。短时测量范围和计时差异见CPT_TRAINING.md；GPU训练样本达到100%利用率。
+- 运行实际3步训练、独立进程重载、从第2步恢复至第3步。首次fast恢复后参数SHA不完全相同，未将其冒充通过；原样重复恢复也出现微差。改用官方严格确定性GPU计算做对照后，完整/恢复最终适配器SHA均为 `df991bc4c77eeb11cb2422cbd2ac496fd6c43c78c749e79fca9add559f4ae972`，真实参考输入输出也完全相同，说明本次微差与非确定性计算路径相关，未通过放宽阈值掩盖差异。
+- 最终代码另加数值策略指纹、恢复前全部状态零容差核对。最终冻结脚本 `OPS/train_domain_cpt_verified.py` SHA256 `9a969e33843d864befdc348594c21d2f39c4a0cca8683839023ecd914c0b7098`，与仓库脚本一致。完整三段命令在 `OPS/verified_validation_commands.json`，分别为 `PY <脚本> --mode train --precision bf16 --deterministic --max-steps 3 --microbatch 1 --grad-accum 1 --save-every 1 --eval-every 0 --eval-batches 2 ...`、`--mode reload-check --deterministic ...`、相同训练配置加 `--resume-from-checkpoint <原run>/checkpoints/step-00000002` 到新目录。三段全部exit0。
+- 最终真实验收目录 `/root/autodl-tmp/training_runs/qwen_cpt_verified_validation_20261031` 及其 `_resumed` 目录仍保留。独立重载loss差和选定logits差均0；恢复前6944项节点、3586个张量/402,659,152元素和NumPy状态核对，mismatch0；恢复后适配器逐字节一致。结果汇总 `OPS/verified_acceptance.json`，恢复状态报告在resumed目录 `resume_state_audit.json`。
+- 真实连续保存1/2/3步后，只保留step2/step3两个周期检查点，final另存；单份实测1,627,557,909字节。保存前检查当前张量、tokenizer和元数据预计体积，并另外保留10GiB；本地实际文件系统容量接受/拒绝路径验证通过，无mock。独立临时目录写完后原子改名，保留策略只删除当前run_id的完整周期结果，不跟随符号链接。
+- 清理了本轮已被最终验收取代的6个实验run中的final/checkpoints/benchmark_adapter，精确核对均在training_runs下、无符号链接；仅移除本轮临时模型产物，保留实验日志和报告。释放21,157,145,477字节，原文/基础模型/最终验收目录不动；记录 `OPS/temporary_checkpoint_cleanup.json`。2026-10-31 00:13检查数据盘剩余82,224,648,192字节，正式训练正常峰值约4.9GB，另有10GiB写入余量保护。
+- TensorBoard `http://127.0.0.1:6007/`、`/data/runs`、`/data/plugin/scalars/tags` 实际HTTP200，已有真实运行和标量指标。本轮未新增推理API或业务前端；未做浏览器渲染验收，也不声称有此证据。
+
+### 当前正在运行：不要再次启动
+
+- 2026-10-31 **00:13:13 +08:00** 启动正式任务，监督进程PID **7114**，训练进程PID **7970**。命令 `/root/miniconda3/bin/python -u OPS/run_epoch.py` 已以独立会话后台运行，关闭控制端不影响；此启动脚本只在真实验收全部通过后开始训练，有文件锁防止重复启动。
+- 正式输出 `/root/autodl-tmp/training_runs/qwen_cpt_bf16_epoch1_20261031`。完整参数在 `OPS/formal_commands.json` 和CPT_TRAINING.md：BF16 / fast数值模式 / rank16 / microbatch1 / grad_accum8 / 学习率2e-5 / warmup3% / 1epoch，共4718个更新；定期每100步保存，仅保留2份周期检查点，验证每500步覆盖完整337块，结束测试覆盖289块。
+- 正式训练从基础模型和新适配器开始，未继承基准或验收更新。启动后先评估完整验证集，随后训练。只完成短程验收、尚未完成完整一轮；预计约35～40小时，最终以真实吞吐和日志为准。fast模式优先吞吐，后续反向计算不承诺逐位确定性，但恢复时仍严格核对保存状态。
+- 状态 `OPS/epoch_status.json`，训练日志 `OPS/epoch.log`，监督日志 `OPS/epoch_supervisor.log`，每5秒GPU利用率/显存/功耗 `OPS/gpu_telemetry.csv`。正式输出目录有train_steps.jsonl、模型/数据审计及TensorBoard；最终train_report.json仅全轮结束生成。监督进程在训练exit0后自动新进程重载最终检查点，再标记complete；任何失败标记failed并保留日志，不偷偷重启改变训练进度。
+- 下一设备先检查工作区、fetch并读取本交接，再通过上述状态和PID确认实际进度，不重复占用GPU。若中断，从LATEST_CHECKPOINT.json的完整结果按同配置恢复，详见CPT_TRAINING.md；不要直接加载本轮已清理的早期测试检查点。
+
+### 提交、范围与后续
+
+- 本地实际执行 `python -m py_compile scripts/prepare_cpt_corpus.py scripts/train_domain_cpt.py`、两个入口`--help`；仓库检查 `python scripts/check_repository.py`、暂存区凭据与大小扫描、`git diff --cached --check`。这些仅是代码检查；流程通过依据是上述真实输入/GPU/保存/恢复证据，不能替代完整一轮质量评估。原已停止且有未提交修改的本体测试不在本轮重新验收。
+- 更新AGENTS.md、CHANGELOG.md、HANDOFF.md、SERVER.md，新增两份训练脚本、requirements-cpt.txt和CPT_TRAINING.md。仅这些工程文件提交并推送GitHub，不上传语料/权重/训练数组/检查点/日志。小型审计报告下载到本机忽略目录 `artifacts/qwen_cpt_20261030/`。
+- 后续必须等待全轮退出与独立重载通过，再比较完整验证/测试损失及另行设计的领域任务；近重复泄漏、指令遵循变化和真实下游能力尚未评估，不能由短程loss或GPU满载推断。
+- 回滚代码用 `git revert <本次提交>`，不改写共享历史；Git回滚不会停止后台训练或恢复已清理的临时检查点。若要停止训练先核对当时PID及命令，保留完整检查点；原始论文及基础模型始终不删改。提交后 `git push origin main`，失败保留本地提交并重试该命令。
+
 ## 2026-10-28 — 下载 Qwen3-VL-32B-Instruct，完整性验证通过
 
 - 用户在服务器清理后发出新指令下载 Qwen3-VL-32B；选择官方 `Qwen/Qwen3-VL-32B-Instruct` BF16 原始版，已在过程中告知。旧本体开发保持停止，本地已有未提交改动均保留，本轮仅提交三份交接文档。

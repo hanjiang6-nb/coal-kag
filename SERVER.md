@@ -1,6 +1,35 @@
 # 服务器信息
 
-## 当前服务器：2026-10-28 已下载 Qwen3-VL-32B-Instruct
+## 当前服务器：2026-10-30 / 31 论文正文 CPT
+
+| 项目 | 已核实信息 |
+| --- | --- |
+| 主机 / SSH | `connect.weste.seetacloud.com`，端口 `46865`，用户 `root` |
+| 实际主机名 | `autodl-container-djwyj4ty9l-824baf4a` |
+| 系统 | Ubuntu 22.04.5 LTS，Linux 5.15.0-78-generic，x86_64 |
+| GPU | 1 × NVIDIA RTX 6000D，nvidia-smi 总显存85,651MiB；PyTorch可用总显存约83.05GiB；驱动595.71.05，计算能力sm_120 |
+| CPU / 内存配额 | cgroup CPU 22核、内存110GiB |
+| 基础环境 | `/root/miniconda3/bin/python`，Python3.12.3；PyTorch2.8.0+cu128、torchvision0.23.0+cu128 |
+| CPT 环境 | `/root/autodl-tmp/envs/qwen-cpt-20261030/bin/python`，继承基础PyTorch；Transformers4.57.6、PEFT0.18.1、Accelerate1.12.0、bitsandbytes0.49.2、NumPy2.3.2、TensorBoard2.20.0 |
+| 模型 | `/root/autodl-tmp/models/Qwen3-VL-32B-Instruct`，14个权重分片，27文件共66,726,520,993字节 |
+| 论文 | `/root/autodl-tmp/cpt_multimodal_20261023`；4755篇正文，正文266,654,616字节；完整图文目录约23.6GB |
+| 兼容路径 | `/root/autodl-tmp/rag/cpt_multimodal_20261023` 是上述论文目录的符号链接 |
+| 训练输入 | `/root/autodl-tmp/training_data/paper_cpt_2048_20261030_parallel`，真实tokenizer处理后、完成SHA验证的训练/验证/测试数组 |
+| 代码 / 运行记录 | 控制端 `F:\kag`；远端冻结脚本及启动记录在 `/root/autodl-tmp/.ops/qwen_cpt_20261030`，不是整仓库部署 |
+| 正式输出 | `/root/autodl-tmp/training_runs/qwen_cpt_bf16_epoch1_20261031`；实际启动状态和交接命令以 `HANDOFF.md` 为准 |
+| 指标 | 输出目录的JSONL和报告，TensorBoard事件 `/root/tf-logs`；无新增推理API或业务前端 |
+| 数据盘 | 总182,536,110,080字节；正式训练每份续训检查点实测约1.63GB，默认保留2份周期结果；每次保存预留10GiB额外余量 |
+| SSH 主机指纹 | `SHA256:liZ36vNCsNcNdXeWs4f+g5ZIhPM/ZihP834vxs8Ulqc`；同时核对实际容器名，不能只凭共享平台密钥辨认容器 |
+
+```powershell
+ssh -p 46865 root@connect.weste.seetacloud.com
+```
+
+密码不记录。正式CPT命令和恢复操作见 `CPT_TRAINING.md`；后台运行不依赖控制端保持SSH连接。原模型、论文、训练数组、检查点和日志均不上传GitHub。
+
+此次读取服务器上既有迁移完成记录，确认2026-10-28从 `connect.westd.seetacloud.com:49209` 迁入旧37518容器的4755篇/133758文件，23,576,496,902字节逐文件SHA一致；源未删除。迁移后的图片引用审计扫描76803个本地引用，缺失/越界/无效为0，但未验证图像语义和全部图片解码。本次纯文本CPT只验证和使用实际正文；当前46865服务器已具备完整模型和论文，不需要重新迁移。
+
+## 历史服务器：2026-10-28 已下载 Qwen3-VL-32B-Instruct
 
 | 项目 | 信息 |
 | --- | --- |
